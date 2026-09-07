@@ -1,10 +1,28 @@
-const productsDiv = document.getElementById("products");
+const form = document.getElementById("searchForm");
+const input = document.getElementById("searchInput");
+const products = document.getElementById("products");
 const status = document.getElementById("status");
 
-async function getProducts() {
+form.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const search = input.value.trim();
+
+    if (!search) {
+        status.textContent = "Please enter a product name!";
+        products.innerHTML = "";
+        return;
+    }
+
+    status.textContent = "Loading...";
+    products.innerHTML = "";
+
     try {
-        const response =
-            await fetch("https://dummyjson.com/products?limit=5");
+
+        const response = await fetch(
+            `https://dummyjson.com/products/search?q=${encodeURIComponent(search)}`
+        );
 
         if (!response.ok) {
             throw new Error("API Error");
@@ -12,20 +30,40 @@ async function getProducts() {
 
         const data = await response.json();
 
-        productsDiv.innerHTML = data.products.map(product => `
+        const result = data.products.filter(
+            product => product.stock > 0
+        );
+
+        if (result.length === 0) {
+            status.textContent = "No products found!";
+            return;
+        }
+
+        products.innerHTML = result.map(product => `
             <div class="card">
-                <img src="${product.thumbnail}" alt="${product.title}">
+
+                <img
+                    src="${product.thumbnail}"
+                    alt="${product.title}"
+                >
+
                 <h3>${product.title}</h3>
-                <p>Price: $${product.price}</p>
+
                 <p>Category: ${product.category}</p>
+
+                <p>Price: $${product.price}</p>
+
+                <p>⭐ ${product.rating}</p>
+
             </div>
         `).join("");
 
-        status.textContent = "Products Loaded Successfully!";
-    } catch (error) {
-        status.textContent = "Error loading products!";
-        console.log(error);
-    }
-}
+        status.textContent = `${result.length} product(s) found.`;
 
-getProducts();
+    } catch (error) {
+
+        status.textContent = "Something went wrong!";
+        console.log(error);
+
+    }
+});
